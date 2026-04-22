@@ -167,7 +167,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-count">4</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -178,7 +178,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">9</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -200,6 +200,159 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://yuyonggang.github.io/2026/04/22/building-a-real-ai-agent-natural-language-modeling-for-sap-datasphere-with/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/yuyonggang.png">
+      <meta itemprop="name" content="yuyonggang">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Data & AI - SAP Insights">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Data & AI - SAP Insights">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/04/22/building-a-real-ai-agent-natural-language-modeling-for-sap-datasphere-with/" class="post-title-link" itemprop="url">Building a Real AI Agent: Natural Language Modeling for SAP Datasphere with Vibe Coding</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2026-04-22 16:50:00" itemprop="dateCreated datePublished" datetime="2026-04-22T16:50:00+02:00">2026-04-22</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology/" itemprop="url" rel="index"><span itemprop="name">Technology</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <blockquote>
+<p>In my previous article, Using Claude Code and Natural Language to Create SAP Datasphere Artifacts, I used Claude Code’s natural language capabilities to automatically generate SAP Datasphere models — in that scenario, Claude Code itself was the Agent, understanding my intent, calling CLI scripts, and completing the modeling. But afterward, I kept thinking: <strong>what if I wanted an Agent of my own?</strong> One with a web interface that teammates could use, with freely extensible tools? So I decided: use Vibe Coding to build my own Agent.</p>
+</blockquote>
+<hr>
+<h2 id="1-From-“Using-an-Agent”-to-“Building-an-Agent”"><a href="#1-From-“Using-an-Agent”-to-“Building-an-Agent”" class="headerlink" title="1. From “Using an Agent” to “Building an Agent”"></a>1. From “Using an Agent” to “Building an Agent”</h2><p>Let me clarify the difference between these two things.</p>
+<p>In the previous article, the workflow was: I told Claude Code in the terminal “create a sales data table,” and Claude Code understood my intent, assembled the parameters, called JS scripts, and built the table. The Agent here was Claude Code — its Agent Loop, tool calling, and context management were all built by Anthropic, ready to use out of the box.</p>
+<p>But this had several limitations: only I could use it in the terminal, with no way to share it with colleagues unfamiliar with the command line; the tool extension and orchestration logic was locked inside Claude Code, beyond my customization; and if I wanted to switch LLM backends or add RAG retrieval capabilities, there was no way in.</p>
+<p>So this time, my goal was to <strong>implement every component of the Agent myself</strong> — LLM calls, tool registration, Agent Loop, streaming communication, Web UI — and plug in the previously written JS skill scripts as tools. The development approach? Still Vibe Coding, still conversing with Claude Code, except this time its role shifted from “Agent” to “development partner helping me build an Agent.”</p>
+<hr>
+<h2 id="2-What-Is-an-AI-Agent-Let’s-Talk-Design-Patterns"><a href="#2-What-Is-an-AI-Agent-Let’s-Talk-Design-Patterns" class="headerlink" title="2. What Is an AI Agent? Let’s Talk Design Patterns"></a>2. What Is an AI Agent? Let’s Talk Design Patterns</h2><p>Before getting hands-on, it’s worth understanding the major design patterns for AI Agents. These aren’t academic concepts — they’re choices you must make when building an Agent, and they determine how your Agent reasons and orchestrates tool calls.</p>
+<h3 id="2-1-ReAct-Reason-Act-Observe"><a href="#2-1-ReAct-Reason-Act-Observe" class="headerlink" title="2.1 ReAct: Reason-Act-Observe"></a>2.1 ReAct: Reason-Act-Observe</h3><p>ReAct (Reasoning + Acting) is currently the most widely used Agent pattern. Its workflow is intuitive:</p>
+<blockquote>
+<p><strong>Reason</strong> (Which tool should I call?) → <strong>Act</strong> (Call the tool) → <strong>Observe</strong> (See the result) → <strong>Reason again</strong> (Is that enough? What’s next?)</p>
+</blockquote>
+<p>This loops until the task is complete. This is exactly the core pattern my Agent uses. The LLM doesn’t give a one-shot answer — it continuously reasons, executes, and reasons again in a loop. For example, when a user says “create a sales data table with ID, name, and amount,” the Agent’s inner monologue might be:</p>
+<ul>
+<li><em>Reason: The user wants a table, I should call the create_local_table tool</em></li>
+<li><em>Act: Assemble parameters, call the tool</em></li>
+<li><em>Observe: Success returned, table created</em></li>
+<li><em>Reply to user: Table created with ID, NAME, and AMOUNT columns</em></li>
+</ul>
+<h3 id="2-2-Function-Calling-Tool-Use-Giving-LLMs-Hands-and-Feet"><a href="#2-2-Function-Calling-Tool-Use-Giving-LLMs-Hands-and-Feet" class="headerlink" title="2.2 Function Calling &#x2F; Tool Use: Giving LLMs Hands and Feet"></a>2.2 Function Calling &#x2F; Tool Use: Giving LLMs Hands and Feet</h3><p>LLMs can only generate text on their own. But through the Tool Use mechanism, you can provide the LLM with descriptions of available tools (name, parameters, purpose), and the LLM can output not just text but structured tool-calling instructions — “I want to call <code>create_local_table</code> with parameters <code>{name: &#39;SALES&#39;, columns: &#39;...&#39;}</code>.” An external program executes the call and feeds the result back to the LLM.</p>
+<p>This is OpenAI’s function calling protocol and the foundational capability of most Agent frameworks. My Agent is built on this mechanism: existing scripts are registered as tools, and the LLM decides when to call which one.</p>
+<h3 id="2-3-Reflection-Self-Review-and-Error-Correction"><a href="#2-3-Reflection-Self-Review-and-Error-Correction" class="headerlink" title="2.3 Reflection: Self-Review and Error Correction"></a>2.3 Reflection: Self-Review and Error Correction</h3><p>The Reflection pattern lets an Agent look back at its own output to judge “was that right?” and correct course if not. It typically doesn’t require extra code logic — it can be implemented through System Prompt instructions. For example, you can tell the Agent “if the generated SQL has syntax errors, fix it yourself and re-execute,” and the Agent will autonomously adjust its strategy upon observing an error, rather than throwing it directly to the user.</p>
+<h3 id="2-4-Other-Patterns-Planning-and-Multi-Agent"><a href="#2-4-Other-Patterns-Planning-and-Multi-Agent" class="headerlink" title="2.4 Other Patterns: Planning and Multi-Agent"></a>2.4 Other Patterns: Planning and Multi-Agent</h3><p><strong>Planning (plan-then-execute)</strong> has the Agent formulate a multi-step plan before executing step by step. Suitable for complex tasks like “build me a data warehouse with three related tables and an analytic model.”</p>
+<p><strong>Multi-Agent</strong> has multiple Agents collaborate, each with its own role. For example, one understands requirements, one writes SQL, one reviews quality. Suitable for complex workflows requiring specialization.</p>
+<p>For this project, I chose the <strong>ReAct + Tool Use + Reflection</strong> combination — sufficient for current needs, simple enough architecturally, and evolvable toward Planning or Multi-Agent later.</p>
+<hr>
+<h2 id="3-From-Requirements-to-Plan-Claude-Code’s-Plan-Mode"><a href="#3-From-Requirements-to-Plan-Claude-Code’s-Plan-Mode" class="headerlink" title="3. From Requirements to Plan: Claude Code’s Plan Mode"></a>3. From Requirements to Plan: Claude Code’s Plan Mode</h2><p>With design patterns decided, it was time to execute. I opened Claude Code and described the requirements in natural language: six existing JS CLI scripts need to be upgraded into an AI Agent framework with a Web UI, using FastAPI for the backend, Next.js for the frontend, calling LLMs through an OpenAI-compatible interface, and keeping existing scripts unchanged by calling them via Python subprocess.</p>
+<p>Claude Code didn’t start writing code immediately. It first entered Plan Mode — generating a complete architecture plan for my review and approval. This process is important: it ensures the AI and I are aligned on “what to build,” rather than going off in different directions.</p>
+<p>Here are the key parts of the plan Claude Code generated:</p>
+<blockquote>
+<p><strong>Tech Stack</strong></p>
+<ul>
+<li>Frontend: Next.js + Tailwind CSS + TypeScript</li>
+<li>Backend: FastAPI + Python</li>
+<li>LLM: HyperSpace LLM Proxy (OpenAI-compatible API)</li>
+<li>JS Skills: Keep existing code, call via subprocess</li>
+</ul>
+<p><strong>Project Structure</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">dsp-agent/</span><br><span class="line">├── frontend/          # Next.js frontend</span><br><span class="line">│   └── src/</span><br><span class="line">│       ├── app/       # Pages</span><br><span class="line">│       ├── components/# Chat components</span><br><span class="line">│       ├── lib/       # API client, SSE stream parser</span><br><span class="line">│       └── types/     # TypeScript types</span><br><span class="line">├── backend/           # FastAPI backend</span><br><span class="line">│   └── app/</span><br><span class="line">│       ├── agent/     # Agent Loop, LLM client, System Prompt</span><br><span class="line">│       ├── api/       # REST routes (chat, tools, health)</span><br><span class="line">│       ├── tools/     # Tool base class, registry, Datasphere tools</span><br><span class="line">│       └── models/    # Data models</span><br><span class="line">└── skills/            # Existing JS Skills (untouched)</span><br></pre></td></tr></table></figure>
+
+<p><strong>Phased Implementation</strong></p>
+<ul>
+<li>Phase 1: Backend Agent core (LLM client, Tool system, Agent Loop, API routes)</li>
+<li>Phase 2: Frontend chat interface (SSE streaming, message rendering, tool call visualization)</li>
+<li>Phase 3: Enhancements (session management, plugin system, vector DB interface reserved)</li>
+</ul>
+</blockquote>
+<p>I reviewed the plan, adjusted a few details, and only after confirmation did it begin implementing module by module.</p>
+<hr>
+<h2 id="4-Vibe-Coding-in-Practice-An-Afternoon-of-Conversation"><a href="#4-Vibe-Coding-in-Practice-An-Afternoon-of-Conversation" class="headerlink" title="4. Vibe Coding in Practice: An Afternoon of Conversation"></a>4. Vibe Coding in Practice: An Afternoon of Conversation</h2><p>With the architecture blueprint in hand, it was time to implement. The entire process was done through Vibe Coding — describing requirements in natural language in the Claude Code CLI, advancing module by module.</p>
+<h3 id="4-1-Solving-a-UX-Problem-First-SSE-Streaming"><a href="#4-1-Solving-a-UX-Problem-First-SSE-Streaming" class="headerlink" title="4.1 Solving a UX Problem First: SSE Streaming"></a>4.1 Solving a UX Problem First: SSE Streaming</h3><p>Before building specific modules, I thought through a UX problem: a user sends one message, but the Agent might need several rounds of tool calls, each taking tens of seconds. If we wait for everything to finish before returning one big result, users stare at a blank page — terrible experience.</p>
+<p>The solution was <strong>SSE (Server-Sent Events)</strong>. Simply put, the backend doesn’t batch up a big result to return — it pushes an event stream in real time, like a live broadcast. I defined five event types: AI starts outputting text (<code>text_delta</code>), starts calling a tool (<code>tool_call_start</code>), tool returns results (<code>tool_call_result</code>), error (<code>error</code>), and done (<code>done</code>). The frontend renders each event immediately as it arrives — users can see the AI “thinking and typing” in real time, with loading cards during tool execution that turn green on completion.</p>
+<p>This decision permeated both backend and frontend design: every step of the Agent Loop must produce SSE events, and every frontend component must respond to SSE events. Getting this “communication pipeline” right first made everything downstream smoother.</p>
+<h3 id="4-2-Agent-Loop-The-Heart-of-the-Agent"><a href="#4-2-Agent-Loop-The-Heart-of-the-Agent" class="headerlink" title="4.2 Agent Loop: The Heart of the Agent"></a>4.2 Agent Loop: The Heart of the Agent</h3><p>The Agent Loop is the system’s core — the concrete implementation of the ReAct pattern described above. The principle is simple: maintain a message list, keep feeding it to the LLM. The LLM either returns text (task complete) or returns tool call instructions (execute the tool, append the result to the message list, continue the loop). Every step pushes SSE events to the frontend, with a max iteration count to prevent infinite loops.</p>
+<p>Here’s what the core code looks like (simplified):</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, user_message, history=<span class="literal">None</span></span>):</span><br><span class="line">    messages = [system_prompt] + (history <span class="keyword">or</span> []) + [user_message]</span><br><span class="line">    tools = get_openai_tools()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> iteration <span class="keyword">in</span> <span class="built_in">range</span>(<span class="variable language_">self</span>._max_iterations):</span><br><span class="line">        <span class="comment"># Call LLM with full message history and tool list</span></span><br><span class="line">        assistant_msg = <span class="keyword">await</span> <span class="variable language_">self</span>._llm.chat(messages, tools=tools)</span><br><span class="line"></span><br><span class="line">        content = assistant_msg.get(<span class="string">&quot;content&quot;</span>)</span><br><span class="line">        tool_calls = assistant_msg.get(<span class="string">&quot;tool_calls&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># LLM returned text → push to frontend</span></span><br><span class="line">        <span class="keyword">if</span> content:</span><br><span class="line">            <span class="keyword">yield</span> SSEEvent(event=<span class="string">&quot;text_delta&quot;</span>, data=&#123;<span class="string">&quot;content&quot;</span>: content&#125;)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># No tool calls → task complete, exit loop</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> tool_calls:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># Has tool calls → execute each, append results to message list</span></span><br><span class="line">        <span class="keyword">for</span> tc <span class="keyword">in</span> tool_calls:</span><br><span class="line">            result = <span class="keyword">await</span> execute_tool(tc)</span><br><span class="line">            <span class="keyword">yield</span> SSEEvent(event=<span class="string">&quot;tool_call_result&quot;</span>, data=result)</span><br><span class="line">            messages.append(tool_result_message(tc, result))</span><br><span class="line">        <span class="comment"># Back to top of loop, let LLM see tool results and decide next step</span></span><br></pre></td></tr></table></figure>
+
+<p>The Agent’s “intelligence” isn’t in this code — it’s just an orchestration framework. The real decisions (which tool to call, what parameters to pass, whether to retry) are all delegated to the LLM.</p>
+<h3 id="4-3-Tool-System-Old-Wine-in-New-Bottles"><a href="#4-3-Tool-System-Old-Wine-in-New-Bottles" class="headerlink" title="4.3 Tool System: Old Wine in New Bottles"></a>4.3 Tool System: Old Wine in New Bottles</h3><p>The existing JS skill scripts already worked standalone — I didn’t want to rewrite them. The only question was: how to register them as Agent-callable tools in the Python backend?</p>
+<p>The answer is a simple wrapper layer. Each tool class only needs to declare four things: name, description, parameter JSON Schema, and the script path. At execution time, Python converts the LLM’s parameters into CLI flags, calls the Node.js script via subprocess, and returns stdout as the result to the LLM.</p>
+<p>The benefit: <strong>zero modifications to existing code</strong> — the Python layer only translates and bridges. To add a new tool in the future — whether another script, a Python function, or an HTTP API — just implement the same interface and register it.</p>
+<h3 id="4-4-Frontend-Chat-Interface"><a href="#4-4-Frontend-Chat-Interface" class="headerlink" title="4.4 Frontend: Chat Interface"></a>4.4 Frontend: Chat Interface</h3><p>The frontend was built with Next.js + Tailwind, with just three core components: message bubbles, tool call cards, and an input bar. Since the SSE event protocol was already defined, the frontend just needed a loop to parse the event stream and update UI state in real time. The entire frontend was also generated through Vibe Coding — describe the requirements clearly, and Claude delivered it in one pass.</p>
+<p>Once running, I typed in the browser: “Create a customer dimension table CUSTOMER_DIM with columns CUSTOMER_ID, CUSTOMER_NAME, and CITY.” The Agent understood the intent and called the tool — the first two attempts returned 409 errors because objects with the same name already existed in Datasphere. The Agent automatically appended suffixes and retried, ultimately creating the table successfully as CUSTOMER_DIM_V3. The entire process required no human intervention.</p>
+<!-- Image placeholder: conversation screenshot -->
+
+<!-- Image placeholder: screenshot of created model in Datasphere -->
+
+<p>So far I’ve only fully tested this one tool. The other five haven’t been individually verified yet, and the Agent is still a work in progress — but they share the same wrapper mechanism. The core works; what remains is adapting and polishing each one.</p>
+<hr>
+<h2 id="5-Final-Thoughts"><a href="#5-Final-Thoughts" class="headerlink" title="5. Final Thoughts"></a>5. Final Thoughts</h2><p>The purpose of this article is to <strong>experience the process of creating an Agent</strong> — to feel how the complete pipeline from natural language to tool calling comes together. What comes out of an afternoon of Vibe Coding is a prototype, not a production system. Building a production-grade AI Agent application requires serious attention to error handling, session management, security boundaries, and observability — following established design patterns and engineering practices, not just Vibe Coding your way through.</p>
+<p>But the idea I want to share is this: <strong>every developer can build their own AI Agent.</strong></p>
+<p>You don’t need LangChain. You don’t need complex frameworks. A ReAct loop, a tool registration and orchestration mechanism, an SSE streaming channel — that’s the core, just three things. LLM capabilities come through standard OpenAI-compatible interfaces. Tools can be any scripts, APIs, or functions you already have. The Agent’s “intelligence” isn’t in the code — it’s in the System Prompt and tool design.</p>
+<p>And Vibe Coding makes all of this remarkably fast. You don’t need to memorize every framework’s API or hand-write boilerplate. You just need to know clearly what you want, then describe it in natural language. AI handles the implementation; you handle verification and decisions.</p>
+<p>If you have a set of scripts, an API, or any capability that can be toolified — try wrapping them into an Agent. It might only take an afternoon.</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
